@@ -1,0 +1,91 @@
+name: Build
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * 0" # once a week
+
+permissions:
+  contents: write
+
+jobs:
+  version:
+    name: Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.result }}
+    steps:
+      - name: Find latest version
+        uses: actions/github-script@v6
+        id: version
+        with:
+          result-encoding: string
+          script: |
+            const result = await github.graphql(`query {
+              remote: repository(owner:"amir20", name:"dozzle") {
+                latestRelease {
+                  tagName
+                }
+              }
+              local: repository(owner:"pkgbuilds", name:"dozzle-builds") {
+                latestRelease {
+                  tagName
+                }
+              }
+            }`);
+            console.log(result);
+
+            const remote = result?.remote?.latestRelease?.tagName;
+            const local = result?.local?.latestRelease?.tagName;
+            if (remote !== local && remote !== null) {
+              return remote.replace(/^v/, '');
+            } else {
+              return 'nope';
+            }
+
+  build:
+    needs: version
+    if: needs.version.outputs.version != 'nope'
+
+    name: Build
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch source
+        # run: curl -L https://github.com/amir20/dozzle/archive/refs/tags/v${{ env.VERSION }}.tar.gz -o - | tar xzv
+        run: git clone --depth 1 --branch v${{ env.VERSION }} https://github.com/amir20/dozzle dozzle
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+
+      - uses: actions/setup-node@v4
+        name: Install Node
+        with:
+          node-version: latest
+      - run: corepack enable && pnpm --version
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+      - name: Install gRPC and Go
+        run: |
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+
+      - name: prepare
+        run: |
+          cp .goreleaser.yaml dozzle/.goreleaser.yaml
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          args: release --clean
+          workdir: dozzle
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
