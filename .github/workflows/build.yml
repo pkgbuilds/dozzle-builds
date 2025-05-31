@@ -67,7 +67,7 @@ jobs:
           node-version: latest
       - run: corepack enable && pnpm --version
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile --prefer-offline
+        run: cd dozzle && pnpm install --frozen-lockfile --prefer-offline
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
