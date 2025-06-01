@@ -70,7 +70,7 @@ jobs:
           node-version: latest
       - run: corepack enable && pnpm --version
       - name: Install dependencies
-        run: cd dozzle && pnpm install --frozen-lockfile --prefer-offline
+        run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
@@ -89,6 +89,6 @@ jobs:
           distribution: goreleaser
           version: "~> v2"
           args: release --clean --skip=validate
-          workdir: dozzle
+          workdir: .
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
