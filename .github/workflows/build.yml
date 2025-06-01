@@ -62,7 +62,7 @@ jobs:
         # run: curl -L https://github.com/amir20/dozzle/archive/refs/tags/v${{ env.VERSION }}.tar.gz -o - | tar xzv
         run: |
           git remote add source https://github.com/amir20/dozzle
-          git fetch source v${{ env.VERSION }}
+          git fetch source tag v${{ env.VERSION }} --no-tags
           git checkout v${{ env.VERSION }}
           git checkout origin/main -- .goreleaser.yaml
 
