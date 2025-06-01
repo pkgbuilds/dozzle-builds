@@ -7,9 +7,8 @@ version: 2
 
 before:
   hooks:
-    - go generate
-    - make shared_cert.pem
-    - pnpm build
+    - make dist
+    - make generate
 
 builds:
   - env:
@@ -17,10 +16,10 @@ builds:
     goos:
       - linux
       - windows
-      - darwin
+      # - darwin
     goarch:
       - amd64
-      - arm64
+      # - arm64
     ldflags: >-
       -X "github.com/amir20/dozzle/internal/support/cli.Version={{ .Version }}"
 
